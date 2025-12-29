@@ -27,7 +27,7 @@ const App = () => {
                 <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
             </div>
             {/* Routes */}
-            <div className="relative z-10">
+            <div className="relative z-10 w-full max-w-6xl">
                 <Routes>
                     <Route
                         path="/"
