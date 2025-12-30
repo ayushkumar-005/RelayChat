@@ -6,12 +6,12 @@ import { useAuthStore } from "./useAuthStore";
 export const useChatStore = create((set, get) => ({
     messages: [],
     users: [],
-    chats: [], // My chat partners
-    allContacts: [], // All available users
+    chats: [],
+    allContacts: [],
     selectedUser: null,
     isUsersLoading: false,
     isMessagesLoading: false,
-    activeTab: "chats", // 'chats' or 'contacts'
+    activeTab: "chats",
 
     setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -62,7 +62,6 @@ export const useChatStore = create((set, get) => ({
             );
             set({ messages: [...messages, res.data] });
 
-            // If this user wasn't in our chat list before, add them now
             const { chats } = get();
             const isUserInChats = chats.some((c) => c._id === selectedUser._id);
             if (!isUserInChats) {
@@ -79,6 +78,9 @@ export const useChatStore = create((set, get) => ({
         const socket = useAuthStore.getState().socket;
         if (!socket) return;
 
+        socket.off("newMessage");
+        socket.off("messagesRead");
+
         socket.on("newMessage", (newMessage) => {
             const { selectedUser } = get();
             if (!selectedUser) return;
@@ -86,16 +88,19 @@ export const useChatStore = create((set, get) => ({
             const isCurrentChat = selectedUser._id === newMessage.senderId;
             if (isCurrentChat) {
                 set({ messages: [...get().messages, newMessage] });
+
+                // Auto-mark as read since user is viewing the chat
+                get().markMessagesAsRead();
             }
         });
 
         socket.on("messagesRead", ({ conversationId }) => {
-            const { selectedUser, messages } = get();
+            const { selectedUser } = get();
             if (!selectedUser) return;
 
             if (selectedUser._id === conversationId) {
                 set({
-                    messages: messages.map((message) => ({
+                    messages: get().messages.map((message) => ({
                         ...message,
                         read: true,
                     })),
