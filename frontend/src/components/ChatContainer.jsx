@@ -17,7 +17,7 @@ const ChatContainer = () => {
         unsubscribeFromMessages,
         markMessagesAsRead,
     } = useChatStore();
-    const { authUser } = useAuthStore();
+    const { authUser, socket } = useAuthStore();
     const messageEndRef = useRef(null);
 
     useEffect(() => {
@@ -32,6 +32,7 @@ const ChatContainer = () => {
         subscribeToMessages,
         unsubscribeFromMessages,
         markMessagesAsRead,
+        socket,
     ]);
 
     useEffect(() => {
