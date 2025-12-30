@@ -7,14 +7,28 @@ import MessageInput from "./MessageInput";
 import MessagesLoadingSkeleton from "./MessagesLoadingSkeleton";
 
 const ChatContainer = () => {
-    const { selectedUser, getMessagesByUserId, messages, isMessagesLoading } =
-        useChatStore();
+    const {
+        selectedUser,
+        getMessagesByUserId,
+        messages,
+        isMessagesLoading,
+        subscribeToMessages,
+        unsubscribeFromMessages,
+    } = useChatStore();
     const { authUser } = useAuthStore();
     const messageEndRef = useRef(null);
 
     useEffect(() => {
         getMessagesByUserId(selectedUser._id);
-    }, [selectedUser, getMessagesByUserId]);
+        subscribeToMessages();
+
+        return () => unsubscribeFromMessages();
+    }, [
+        selectedUser,
+        getMessagesByUserId,
+        subscribeToMessages,
+        unsubscribeFromMessages,
+    ]);
 
     useEffect(() => {
         if (messageEndRef.current) {
@@ -41,7 +55,7 @@ const ChatContainer = () => {
                                     className={`chat-bubble relative ${
                                         msg.senderId === authUser._id
                                             ? "bg-cyan-600 text-white"
-                                            : "bg-slate-800 text-s  late-200"
+                                            : "bg-slate-800 text-s late-200"
                                     }`}
                                 >
                                     {msg.image && (

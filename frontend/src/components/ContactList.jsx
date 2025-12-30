@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
+import { useAuthStore } from "../store/useAuthStore";
 import UsersLoadingSkeleton from "../components/UsersLoadingSkeleton";
 import NoChatsFound from "../components/NoChatsFound";
 
 const ContactList = () => {
     const { getAllContacts, allContacts, setSelectedUser, isUsersLoading } =
         useChatStore();
+    const { onlineUsers } = useAuthStore();
 
     useEffect(() => {
         getAllContacts();
@@ -18,12 +20,17 @@ const ContactList = () => {
             {allContacts.map((contact) => (
                 <div
                     key={contact._id}
-                    className="bg-cyan=500/10 rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors"
+                    className="rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors"
                     onClick={() => setSelectedUser(contact)}
                 >
                     <div className="flex items-center gap-3">
-                        {/* TODO: Make this work with socket */}
-                        <div className={`avatar online`}>
+                        <div
+                            className={`avatar ${
+                                onlineUsers.includes(contact._id)
+                                    ? "online"
+                                    : ""
+                            }`}
+                        >
                             <div className="size-12 rounded-full">
                                 <img
                                     src={contact.profilePic || "/avatar.png"}
