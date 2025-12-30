@@ -88,6 +88,20 @@ export const useChatStore = create((set, get) => ({
                 set({ messages: [...get().messages, newMessage] });
             }
         });
+
+        socket.on("messagesRead", ({ conversationId }) => {
+            const { selectedUser, messages } = get();
+            if (!selectedUser) return;
+
+            if (selectedUser._id === conversationId) {
+                set({
+                    messages: messages.map((message) => ({
+                        ...message,
+                        read: true,
+                    })),
+                });
+            }
+        });
     },
 
     unsubscribeFromMessages: () => {
@@ -95,6 +109,7 @@ export const useChatStore = create((set, get) => ({
         if (!socket) return;
 
         socket.off("newMessage");
+        socket.off("messagesRead");
     },
 
     setSelectedUser: (selectedUser) => set({ selectedUser }),
