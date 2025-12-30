@@ -52,54 +52,71 @@ export const useChatStore = create((set, get) => ({
     },
     sendMessage: async (messageData) => {
         const { selectedUser, messages } = get();
-        const { authUser } = useAuthStore.getState();
-
-        const tempId = `temp-${Date.now()}`;
-
-        const optimisticMessage = {
-            _id: tempId,
-            senderId: authUser._id,
-            receiverId: selectedUser._id,
-            text: messageData.text,
-            image: messageData.image,
-            createdAt: new Date().toISOString(),
-            isOptimistic: true,
-        };
-
-        // Immediately update the UI by adding the message
-        set({ messages: [...messages, optimisticMessage] });
-
         try {
             const res = await axiosInstance.post(
                 `/messages/send/${selectedUser._id}`,
                 messageData
             );
             set({ messages: messages.concat(res.data) });
+
+            const { chats } = get();
+            const isUserInChats = chats.some((c) => c._id === selectedUser._id);
+            if (!isUserInChats) {
+                set({ chats: [...chats, selectedUser] });
+            }
         } catch (error) {
-            // Remove message on failure
-            set({ messages: messages });
             toast.error(
                 error.response?.data?.message || "Something went wrong"
             );
         }
     },
-    subscribeToMessages: () => {
+    markMessagesAsRead: async () => {
         const { selectedUser } = get();
         if (!selectedUser) return;
 
+        try {
+            await axiosInstance.put(`/messages/read/${selectedUser._id}`);
+        } catch (error) {
+            console.log("Error marking messages as read", error);
+        }
+    },
+
+    subscribeToMessages: () => {
         const socket = useAuthStore.getState().socket;
 
         socket.on("newMessage", (newMessage) => {
-            const isMessageSentFromSelectedUser =
-                newMessage.senderId === selectedUser._id;
-            if (!isMessageSentFromSelectedUser) return;
+            const { selectedUser, chats } = get();
 
-            const currentMessages = get().messages;
-            set({ messages: [...currentMessages, newMessage] });
+            if (selectedUser && newMessage.senderId === selectedUser._id) {
+                set({ messages: [...get().messages, newMessage] });
+                // Mark read if applicable (from previous step)
+                get().markMessagesAsRead();
+            }
+
+            const isSenderInChats = chats.some(
+                (c) => c._id === newMessage.senderId
+            );
+
+            if (
+                !isSenderInChats &&
+                newMessage.senderId !== useAuthStore.getState().authUser._id
+            ) {
+                // Silent fetch to update the sidebar without showing a loading spinner
+                axiosInstance
+                    .get("/messages/chats")
+                    .then((res) => {
+                        set({ chats: res.data });
+                    })
+                    .catch((err) =>
+                        console.log("Failed to refresh chats", err)
+                    );
+            }
         });
     },
+
     unsubscribeFromMessages: () => {
         const socket = useAuthStore.getState().socket;
         socket.off("newMessage");
+        socket.off("messagesRead"); // [4] Clean up
     },
 }));

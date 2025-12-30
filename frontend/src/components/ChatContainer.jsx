@@ -5,6 +5,7 @@ import ChatHeader from "./ChatHeader";
 import NoChatHistoryPlaceholder from "./NoChatHistoryPlaceholder";
 import MessageInput from "./MessageInput";
 import MessagesLoadingSkeleton from "./MessagesLoadingSkeleton";
+import { Check, CheckCheck } from "lucide-react";
 
 const ChatContainer = () => {
     const {
@@ -14,6 +15,7 @@ const ChatContainer = () => {
         isMessagesLoading,
         subscribeToMessages,
         unsubscribeFromMessages,
+        markMessagesAsRead,
     } = useChatStore();
     const { authUser } = useAuthStore();
     const messageEndRef = useRef(null);
@@ -21,6 +23,7 @@ const ChatContainer = () => {
     useEffect(() => {
         getMessagesByUserId(selectedUser._id);
         subscribeToMessages();
+        markMessagesAsRead();
 
         return () => unsubscribeFromMessages();
     }, [
@@ -28,6 +31,7 @@ const ChatContainer = () => {
         getMessagesByUserId,
         subscribeToMessages,
         unsubscribeFromMessages,
+        markMessagesAsRead,
     ]);
 
     useEffect(() => {
@@ -52,30 +56,48 @@ const ChatContainer = () => {
                                 }`}
                             >
                                 <div
-                                    className={`chat-bubble relative ${
+                                    className={`chat-bubble relative flex flex-col ${
                                         msg.senderId === authUser._id
                                             ? "bg-cyan-600 text-white"
-                                            : "bg-slate-800 text-s late-200"
+                                            : "bg-slate-800 text-slate-200"
                                     }`}
                                 >
                                     {msg.image && (
                                         <img
                                             src={msg.image}
                                             alt="Shared"
-                                            className="rounded-lg h-48 object-cover"
+                                            className="rounded-lg h-48 object-cover mb-2"
                                         />
                                     )}
-                                    {msg.text && (
-                                        <p className="mt-2">{msg.text}</p>
-                                    )}
-                                    <p className="text-xs mt-1 opacity-75 flex items-center gap-1">
-                                        {new Date(
-                                            msg.createdAt
-                                        ).toLocaleTimeString(undefined, {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                        })}
-                                    </p>
+                                    {msg.text && <p>{msg.text}</p>}
+
+                                    {/* [4] Time and Ticks Row */}
+                                    <div className="flex items-center justify-end gap-1 mt-1">
+                                        <span className="text-[10px] opacity-70">
+                                            {new Date(
+                                                msg.createdAt
+                                            ).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}
+                                        </span>
+
+                                        {msg.senderId === authUser._id && (
+                                            <span
+                                                className={
+                                                    msg.read
+                                                        ? "text-blue-300"
+                                                        : "text-slate-300"
+                                                }
+                                            >
+                                                {msg.read ? (
+                                                    <CheckCheck size={14} />
+                                                ) : (
+                                                    <Check size={14} />
+                                                )}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -87,7 +109,6 @@ const ChatContainer = () => {
                     <NoChatHistoryPlaceholder name={selectedUser.fullName} />
                 )}
             </div>
-
             <MessageInput />
         </>
     );

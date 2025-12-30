@@ -116,3 +116,28 @@ export const getChatPartners = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const markMessagesAsRead = async (req, res) => {
+    try {
+        const { id: userToChatId } = req.params;
+        const myId = req.user._id;
+
+        // Update all unread messages sent by the other user to me
+        await Message.updateMany(
+            { senderId: userToChatId, receiverId: myId, read: false },
+            { $set: { read: true } }
+        );
+
+        const senderSocketId = getReceiverSocketId(userToChatId);
+        if (senderSocketId) {
+            io.to(senderSocketId).emit("messagesRead", {
+                conversationId: myId,
+            });
+        }
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.log("Error in markMessagesAsRead controller:", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
