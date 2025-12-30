@@ -3,7 +3,6 @@
 A modern **real-time chat app** with **JWT auth (httpOnly cookies)**, **online presence**, **read receipts**, and **image sharing** — built with **React + Vite**, **Node/Express**, **MongoDB**, and **Socket.IO**.
 
 -   **Live Demo:** https://relaychat-u26m.onrender.com/
--   **Repo:** https://github.com/ayushkumar-005/RelayChat
 
 ## ✨ Features
 
@@ -63,7 +62,7 @@ Arcjet adds shielding, bot detection, and rate limiting
 
 ## 🖼️ Screens (from the project)
 
-<p align="center"> <img src="https://i.ibb.co/wNdC8sxj/chrome-JE3b-Ivo-Y3q.png" alt="Screen 1" width="420" /> <img src="https://i.ibb.co/sd8WswbN/chrome-FF8h-T9-UIKL.png" alt="Screen 2" width="420" /> </p>
+<p align="center"> <img src="https://i.ibb.co/wNdC8sxj/chrome-JE3b-Ivo-Y3q.png" alt="Screen 1" width="640" /> <img src="https://i.ibb.co/sd8WswbN/chrome-FF8h-T9-UIKL.png" alt="Screen 2" width="640" /> </p>
 
 ## 🙌 Acknowledgements
 
