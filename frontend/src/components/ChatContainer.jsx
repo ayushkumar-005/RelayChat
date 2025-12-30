@@ -71,7 +71,7 @@ const ChatContainer = () => {
                                     )}
                                     {msg.text && <p>{msg.text}</p>}
 
-                                    {/* [4] Time and Ticks Row */}
+                                    {/* Time and Ticks Row */}
                                     <div className="flex items-center justify-end gap-1 mt-1">
                                         <span className="text-[10px] opacity-70">
                                             {new Date(

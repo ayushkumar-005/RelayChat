@@ -4,27 +4,16 @@ import toast from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
 
 export const useChatStore = create((set, get) => ({
-    allContacts: [],
-    chats: [],
     messages: [],
-    unreadMessages: [],
-    activeTab: "chats",
+    users: [],
+    chats: [], // My chat partners
+    allContacts: [], // All available users
     selectedUser: null,
     isUsersLoading: false,
     isMessagesLoading: false,
+    activeTab: "chats", // 'chats' or 'contacts'
 
     setActiveTab: (tab) => set({ activeTab: tab }),
-
-    setSelectedUser: (selectedUser) => {
-        set({ selectedUser });
-        if (selectedUser) {
-            set((state) => ({
-                unreadMessages: state.unreadMessages.filter(
-                    (id) => id !== selectedUser._id
-                ),
-            }));
-        }
-    },
 
     getAllContacts: async () => {
         set({ isUsersLoading: true });
@@ -73,6 +62,7 @@ export const useChatStore = create((set, get) => ({
             );
             set({ messages: [...messages, res.data] });
 
+            // If this user wasn't in our chat list before, add them now
             const { chats } = get();
             const isUserInChats = chats.some((c) => c._id === selectedUser._id);
             if (!isUserInChats) {
@@ -85,6 +75,30 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
+    subscribeToMessages: () => {
+        const socket = useAuthStore.getState().socket;
+        if (!socket) return;
+
+        socket.on("newMessage", (newMessage) => {
+            const { selectedUser } = get();
+            if (!selectedUser) return;
+
+            const isCurrentChat = selectedUser._id === newMessage.senderId;
+            if (isCurrentChat) {
+                set({ messages: [...get().messages, newMessage] });
+            }
+        });
+    },
+
+    unsubscribeFromMessages: () => {
+        const socket = useAuthStore.getState().socket;
+        if (!socket) return;
+
+        socket.off("newMessage");
+    },
+
+    setSelectedUser: (selectedUser) => set({ selectedUser }),
+
     markMessagesAsRead: async () => {
         const { selectedUser } = get();
         if (!selectedUser) return;
@@ -96,66 +110,5 @@ export const useChatStore = create((set, get) => ({
         } catch (error) {
             console.log("Error marking messages as read", error);
         }
-    },
-
-    subscribeToMessages: () => {
-        const socket = useAuthStore.getState().socket;
-        if (!socket) return;
-
-        socket.on("newMessage", (newMessage) => {
-            const { selectedUser, chats, unreadMessages } = get();
-
-            const isCurrentChat = selectedUser?._id === newMessage.senderId;
-
-            if (isCurrentChat) {
-                set({ messages: [...get().messages, newMessage] });
-                get().markMessagesAsRead();
-            } else {
-                if (!unreadMessages.includes(newMessage.senderId)) {
-                    set({
-                        unreadMessages: [
-                            ...unreadMessages,
-                            newMessage.senderId,
-                        ],
-                    });
-                }
-                const senderName =
-                    chats.find((c) => c._id === newMessage.senderId)
-                        ?.fullName || "Someone";
-                toast(`New message from ${senderName}`, { icon: "💬" });
-            }
-
-            const isSenderInChats = chats.some(
-                (c) => c._id === newMessage.senderId
-            );
-            const isMe =
-                newMessage.senderId === useAuthStore.getState().authUser._id;
-
-            if (!isSenderInChats && !isMe) {
-                axiosInstance
-                    .get("/messages/chats")
-                    .then((res) => {
-                        set({ chats: res.data });
-                    })
-                    .catch(console.error);
-            }
-        });
-
-        socket.on("messagesRead", ({ conversationId }) => {
-            const { selectedUser, messages } = get();
-            if (selectedUser && selectedUser._id === conversationId) {
-                set({
-                    messages: messages.map((msg) => ({ ...msg, read: true })),
-                });
-            }
-        });
-    },
-
-    unsubscribeFromMessages: () => {
-        const socket = useAuthStore.getState().socket;
-        if (!socket) return;
-
-        socket.off("newMessage");
-        socket.off("messagesRead");
     },
 }));
