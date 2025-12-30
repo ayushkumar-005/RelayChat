@@ -7,13 +7,24 @@ export const useChatStore = create((set, get) => ({
     allContacts: [],
     chats: [],
     messages: [],
+    unreadMessages: [],
     activeTab: "chats",
     selectedUser: null,
     isUsersLoading: false,
     isMessagesLoading: false,
 
     setActiveTab: (tab) => set({ activeTab: tab }),
-    setSelectedUser: (selectedUser) => set({ selectedUser }),
+
+    setSelectedUser: (selectedUser) => {
+        set({ selectedUser });
+        if (selectedUser) {
+            set((state) => ({
+                unreadMessages: state.unreadMessages.filter(
+                    (id) => id !== selectedUser._id
+                ),
+            }));
+        }
+    },
 
     getAllContacts: async () => {
         set({ isUsersLoading: true });
@@ -89,16 +100,29 @@ export const useChatStore = create((set, get) => ({
 
     subscribeToMessages: () => {
         const socket = useAuthStore.getState().socket;
-
         if (!socket) return;
 
         socket.on("newMessage", (newMessage) => {
-            const { selectedUser, chats } = get();
+            const { selectedUser, chats, unreadMessages } = get();
 
-            if (selectedUser && newMessage.senderId === selectedUser._id) {
+            const isCurrentChat = selectedUser?._id === newMessage.senderId;
+
+            if (isCurrentChat) {
                 set({ messages: [...get().messages, newMessage] });
-                // If we are looking at them, mark as read immediately
                 get().markMessagesAsRead();
+            } else {
+                if (!unreadMessages.includes(newMessage.senderId)) {
+                    set({
+                        unreadMessages: [
+                            ...unreadMessages,
+                            newMessage.senderId,
+                        ],
+                    });
+                }
+                const senderName =
+                    chats.find((c) => c._id === newMessage.senderId)
+                        ?.fullName || "Someone";
+                toast(`New message from ${senderName}`, { icon: "💬" });
             }
 
             const isSenderInChats = chats.some(
@@ -129,7 +153,7 @@ export const useChatStore = create((set, get) => ({
 
     unsubscribeFromMessages: () => {
         const socket = useAuthStore.getState().socket;
-        if (!socket) return; // Safety Check
+        if (!socket) return;
 
         socket.off("newMessage");
         socket.off("messagesRead");
