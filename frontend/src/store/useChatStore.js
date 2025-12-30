@@ -29,7 +29,7 @@ export const useChatStore = create((set, get) => ({
     getMyChatPartners: async () => {
         set({ isUsersLoading: true });
         try {
-            const res = await axiosInstance.get("/messages/chats    ");
+            const res = await axiosInstance.get("/messages/chats");
             set({ chats: res.data });
         } catch (error) {
             toast.error(error.response.data.message);
@@ -82,5 +82,24 @@ export const useChatStore = create((set, get) => ({
                 error.response?.data?.message || "Something went wrong"
             );
         }
+    },
+    subscribeToMessages: () => {
+        const { selectedUser } = get();
+        if (!selectedUser) return;
+
+        const socket = useAuthStore.getState().socket;
+
+        socket.on("newMessage", (newMessage) => {
+            const isMessageSentFromSelectedUser =
+                newMessage.senderId === selectedUser._id;
+            if (!isMessageSentFromSelectedUser) return;
+
+            const currentMessages = get().messages;
+            set({ messages: [...currentMessages, newMessage] });
+        });
+    },
+    unsubscribeFromMessages: () => {
+        const socket = useAuthStore.getState().socket;
+        socket.off("newMessage");
     },
 }));
