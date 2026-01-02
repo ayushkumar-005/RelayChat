@@ -1,0 +1,13 @@
+name: Keep Render App Alive
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'  # Runs every 14 minutes
+  workflow_dispatch:  # Allows manual triggering from Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render App
+        run: curl -s https://relaychat-u26m.onrender.com/
